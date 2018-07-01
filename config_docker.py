@@ -2,7 +2,7 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # BASIC APP CONFIG
-WTF_CSRF_ENABLED = os.getenv('WTF_CSRF_ENABLED', True)
+WTF_CSRF_ENABLED = os.getenv('WTF_CSRF_ENABLED', True) == 'True'
 SECRET_KEY = os.getenv('SECRET_KEY', 'We are the world')
 BIND_ADDRESS = os.getenv('BIND_ADDRESS', '127.0.0.1')
 PORT = os.getenv('PORT', 9191)
@@ -22,21 +22,23 @@ UPLOAD_DIR = os.getenv('UPLOAD_DIR', os.path.join(basedir, 'upload'))
 
 # DATABASE CONFIG
 #You'll need MySQL-python
-SQLA_DB_USER = os.getenv('SQLA_DB_USER', 'powerdnsadmin')
-SQLA_DB_PASSWORD = os.getenv('SQLA_DB_PASSWORD', 'powerdnsadminpassword')
-SQLA_DB_HOST = os.getenv('SQLA_DB_HOST', 'mysqlhostorip')
-SQLA_DB_NAME = os.getenv('SQLA_DB_NAME', 'powerdnsadmin')
+SQLA_DB_TYPE = os.getenv('SQLA_DB_TYPE', 'sqlite')
 
-#MySQL
-#SQLALCHEMY_DATABASE_URI = 'mysql://'+SQLA_DB_USER+':'\
-#    +SQLA_DB_PASSWORD+'@'+SQLA_DB_HOST+'/'+SQLA_DB_NAME
-#SQLite
-SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///' + os.path.join(basedir, 'pdns.db'))
+if SQLA_DB_TYPE == 'sqlite':
+	SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'pdns.db')
+elif SQLA_DB_TYPE == 'mysql':
+	SQLA_DB_USER = os.getenv('SQLA_DB_USER', 'powerdnsadmin')
+	SQLA_DB_PASSWORD = os.getenv('SQLA_DB_PASSWORD', 'powerdnsadminpassword')
+	SQLA_DB_HOST = os.getenv('SQLA_DB_HOST', 'mysqlhostorip')
+	SQLA_DB_NAME = os.getenv('SQLA_DB_NAME', 'powerdnsadmin')
+	SQLALCHEMY_DATABASE_URI = 'mysql://'+SQLA_DB_USER+':'+SQLA_DB_PASSWORD+'@'+SQLA_DB_HOST+'/'+SQLA_DB_NAME
+
+
 SQLALCHEMY_MIGRATE_REPO = os.getenv('SQLALCHEMY_MIGRATE_REPO', os.path.join(basedir, 'db_repository'))
-SQLALCHEMY_TRACK_MODIFICATIONS = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS', True)
+SQLALCHEMY_TRACK_MODIFICATIONS = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS', True) == 'True'
 
 # LDAP CONFIG
-LDAP_ENABLED = os.getenv('LDAP_ENABLED', False)
+LDAP_ENABLED = os.getenv('LDAP_ENABLED', False) == 'True'
 LDAP_TYPE = os.getenv('LDAP_TYPE', 'ldap')
 LDAP_URI = os.getenv('LDAP_URI', 'ldaps://your-ldap-server:636')
 # with LDAP_BIND_TYPE you can specify 'direct' or 'search' to use user credentials
@@ -45,7 +47,7 @@ LDAP_BIND_TYPE= 'direct' # direct or search
 LDAP_USERNAME = os.getenv('LDAP_USERNAME', 'cn=dnsuser,ou=users,ou=services,dc=duykhanh,dc=me')
 LDAP_PASSWORD = os.getenv('LDAP_PASSWORD', 'dnsuser')
 LDAP_SEARCH_BASE = os.getenv('LDAP_SEARCH_BASE', 'ou=System Admins,ou=People,dc=duykhanh,dc=me')
-LDAP_GROUP_SECURITY = os.getenv('LDAP_GROUP_SECURITY', False)
+LDAP_GROUP_SECURITY = os.getenv('LDAP_GROUP_SECURITY', False) == 'True'
 LDAP_ADMIN_GROUP = os.getenv('LDAP_ADMIN_GROUP', 'CN=PowerDNS-Admin Admin,OU=Custom,DC=ivan,DC=local')
 LDAP_USER_GROUP = os.getenv('LDAP_USER_GROUP', 'CN=PowerDNS-Admin User,OU=Custom,DC=ivan,DC=local')
 # Additional options only if LDAP_TYPE=ldap
@@ -68,7 +70,7 @@ LDAP_FILTER = os.getenv('LDAP_FILTER', '(objectClass=inetorgperson)')
 #LDAP_FILTER = 'memberof=cn=DNS_users,ou=Groups,dc=domain,dc=local'
 
 # Github Oauth
-GITHUB_OAUTH_ENABLE = os.getenv('GITHUB_OAUTH_ENABLE', False)
+GITHUB_OAUTH_ENABLE = os.getenv('GITHUB_OAUTH_ENABLE', False) == 'True'
 GITHUB_OAUTH_KEY = os.getenv('GITHUB_OAUTH_KEY', '')
 GITHUB_OAUTH_SECRET = os.getenv('GITHUB_OAUTH_SECRET', '')
 GITHUB_OAUTH_SCOPE = os.getenv('GITHUB_OAUTH_SCOPE', 'email')
@@ -78,7 +80,7 @@ GITHUB_OAUTH_AUTHORIZE = os.getenv('GITHUB_OAUTH_AUTHORIZE', 'http://127.0.0.1:9
 
 
 # Google OAuth
-GOOGLE_OAUTH_ENABLE = os.getenv('GOOGLE_OAUTH_ENABLE', False)
+GOOGLE_OAUTH_ENABLE = os.getenv('GOOGLE_OAUTH_ENABLE', False) == 'True'
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', ' ')
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', ' ')
 GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI', '/user/authorized')
@@ -90,8 +92,8 @@ GOOGLE_AUTHORIZE_URL = os.getenv('GOOGLE_AUTHORIZE_URL', 'https://accounts.googl
 GOOGLE_BASE_URL = os.getenv('GOOGLE_BASE_URL', 'https://www.googleapis.com/oauth2/v1/')
 
 # SAML Authnetication
-SAML_ENABLED = os.getenv('SAML_ENABLED', False)
-SAML_DEBUG = os.getenv('SAML_DEBUG', True)
+SAML_ENABLED = os.getenv('SAML_ENABLED', False) == 'True'
+SAML_DEBUG = os.getenv('SAML_DEBUG', True) == 'True'
 SAML_PATH = os.getenv('SAML_PATH', os.path.join(os.path.dirname(__file__), 'saml'))
 ##Example for ADFS Metadata-URL
 SAML_METADATA_URL = os.getenv('SAML_METADATA_URL', 'https://<hostname>/FederationMetadata/2007-06/FederationMetadata.xml')
@@ -112,8 +114,8 @@ SAML_LOGOUT = os.getenv('SAML_LOGOUT', False)
 #SAML_LOGOUT_URL = 'https://google.com'
 
 #Default Auth
-BASIC_ENABLED = os.getenv('BASIC_ENABLED', True)
-SIGNUP_ENABLED = os.getenv('SIGNUP_ENABLED', True)
+BASIC_ENABLED = os.getenv('BASIC_ENABLED', True) == 'True'
+SIGNUP_ENABLED = os.getenv('SIGNUP_ENABLED', True) == 'True'
 
 # POWERDNS CONFIG
 PDNS_STATS_URL = os.getenv('PDNS_STATS_URL', 'http://172.16.214.131:8081/')
@@ -126,10 +128,10 @@ FORWARD_RECORDS_ALLOW_EDIT = ['A', 'AAAA', 'CAA', 'CNAME', 'MX', 'PTR', 'SPF', '
 REVERSE_RECORDS_ALLOW_EDIT = ['SOA', 'TXT', 'LOC', 'NS', 'PTR']
 
 # ALLOW DNSSEC CHANGES FOR ADMINS ONLY
-DNSSEC_ADMINS_ONLY = os.getenv('DNSSEC_ADMINS_ONLY', False)
+DNSSEC_ADMINS_ONLY = os.getenv('DNSSEC_ADMINS_ONLY', False) == 'True'
 
 # EXPERIMENTAL FEATURES
-PRETTY_IPV6_PTR = os.getenv('PRETTY_IPV6_PTR', False)
+PRETTY_IPV6_PTR = os.getenv('PRETTY_IPV6_PTR', False) == 'True'
 
 # Domain updates in background, for big installations
-BG_DOMAIN_UPDATES = os.getenv('BG_DOMAIN_UPDATES', False)
+BG_DOMAIN_UPDATES = os.getenv('BG_DOMAIN_UPDATES', False) == 'True'
