@@ -1218,7 +1218,7 @@ class Record(object):
         # validate record first
         r = self.get_record_data(domain)
         records = r['records']
-        check = list(filter(lambda check: check['name'] == self.name, records))
+        check = list(filter(lambda check: check['name'] == self.name and check['type'] == self.type, records))
         if check:
             r = check[0]
             if r['type'] in ('A', 'AAAA' ,'CNAME'):
@@ -1555,6 +1555,29 @@ class Record(object):
                 self.priority = 10
                 return True
         return False
+
+    def find_existing_by_domainname_and_type(self, domainname, hostname, type):
+        """
+        Check if record is present within domain records, and if it's present set self to found record
+        """
+        jdata = self.get_record_data(domainname)
+        jrecords = jdata['records']
+        
+        print('find_existing_by_domainname_and_type with ' + domainname + ' and ' + type)
+
+        for jr in jrecords:
+            print('invariant: ' + jr['name'] + ' type: ' + jr['type'])
+            if jr['name'] == hostname and jr['type'] == type:
+                print('match!')
+                r = Record()
+                r.name = jr['name']
+                r.type = jr['type']
+                r.status = jr['disabled']
+                r.ttl = jr['ttl']
+                r.data = jr['content']
+                return r
+                
+        return None
 
     def update(self, domain, content):
         """

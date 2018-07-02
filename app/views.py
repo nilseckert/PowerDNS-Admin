@@ -2,6 +2,8 @@ import base64
 import json
 import logging as logger
 import os
+import sqlalchemy as sa
+import sys
 import traceback
 import re
 from distutils.util import strtobool
@@ -1420,13 +1422,36 @@ def dyndns_update():
     # reference: https://help.dyn.com/remote-access-api/perform-update/
     # reference: https://help.dyn.com/remote-access-api/return-codes/
     hostname = request.args.get('hostname')
-    myip = request.args.get('myip')
+    myips = request.args.get('myip')
+    
+    myipparts = myips.split(',')
+    
+    try:
+        for myip in myipparts:
+            handleDynDns(hostname, myip)
+    except NameError as err:
+        print("NameError error: {0}".format(err))
+    except:
+        print(traceback.format_exc())
+        print("Unexpected error:", sys.exc_info()[0])
+        return render_template('dyndns.html', response='911'), 200
+        
+    return render_template('dyndns.html', response='good'), 200
+
+
+def handleDynDns(hostname, myip):
+    logging.info('handleDynDns with host %s and ip %s', hostname, myip)
 
     try:
         # get all domains owned by the current user
         domains = User(id=current_user.id).get_domain()
     except:
         return render_template('dyndns.html', response='911'), 200
+        
+    current_type = 'A'
+    
+    if (len(myip) > 15):
+        current_type = 'AAAA'
 
     domain = None
     domain_segments = hostname.split('.')
@@ -1441,40 +1466,48 @@ def dyndns_update():
     if not domain:
         history = History(msg="DynDNS update: attempted update of {0} but it does not exist for this user".format(hostname), created_by=current_user.username)
         history.add()
-        return render_template('dyndns.html', response='nohost'), 200
+        raise Exception()
 
-    r = Record()
-    r.name = hostname
+    logging.info('try to find existing record with domain %s', domain.name)
+
     # check if the user requested record exists within this domain
-    if r.exists(domain.name) and r.is_allowed_edit():
-        if r.data == myip:
+    existing_record = Record().find_existing_by_domainname_and_type(domain.name, hostname, current_type)
+    
+    logging.info('existing: %s', existing_record != None)
+    
+    if existing_record is not None and existing_record.is_allowed_edit():
+        if existing_record.data == myip:
             # record content did not change, return 'nochg'
             history = History(msg="DynDNS update: attempted update of {0} but record did not change".format(hostname), created_by=current_user.username)
             history.add()
-            return render_template('dyndns.html', response='nochg'), 200
+            return;
         else:
-            oldip = r.data
-            result = r.update(domain.name, myip)
+            oldip = existing_record.data
+            result = existing_record.update(domain.name, myip)
             if result['status'] == 'ok':
                 history = History(msg='DynDNS update: updated record {0} in zone {1}, it changed from {2} to {3}'.format(hostname,domain.name,oldip,myip), detail=str(result), created_by=current_user.username)
                 history.add()
-                return render_template('dyndns.html', response='good'), 200
+                return;
             else:
-                return render_template('dyndns.html', response='911'), 200
-    elif r.is_allowed_edit():
+                raise Exception()
+    elif Record(type=current_type).is_allowed_edit():
+        logging.info('check whether to create dyndns on demand')
+
         ondemand_creation = DomainSetting.query.filter(DomainSetting.domain == domain).filter(DomainSetting.setting == 'create_via_dyndns').first()
-        if (ondemand_creation != None) and (strtobool(ondemand_creation.value) == True):
-            record = Record(name=hostname,type='A',data=myip,status=False,ttl=3600)
+        if (ondemand_creation is not None) and (strtobool(ondemand_creation.value) == True):
+            logging.info('allowed to create')
+            record = Record(name=hostname,type=current_type,data=myip,status=False,ttl=300)
             result = record.add(domain.name)
+            print(result)
             if result['status'] == 'ok':
+                logging.info('result status ok')
                 history = History(msg='DynDNS update: created record {0} in zone {1}, it now represents {2}'.format(hostname,domain.name,myip), detail=str(result), created_by=current_user.username)
                 history.add()
-                return render_template('dyndns.html', response='good'), 200
+                return;
 
     history = History(msg='DynDNS update: attempted update of {0} but it does not exist for this user'.format(hostname), created_by=current_user.username)
     history.add()
-    return render_template('dyndns.html', response='nohost'), 200
-
+    raise Exception()
 
 @app.route('/', methods=['GET', 'POST'])
 @login_required
